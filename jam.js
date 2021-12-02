@@ -1,29 +1,32 @@
 import PicoAudio from './PicoAudio/src/main.js';
 
-const audioContext = new AudioContext;
+const picoAudio = new PicoAudio();
 
-let gainNode = audioContext.createGain();
-gainNode.connect(audioContext.destination); 
-gainNode.gain.value = 0.1 ** 2;
+const audioContext = new AudioContext;
+const fileInputElem = document.getElementById('midi-file');
+fileInputElem.addEventListener('change', () => {
+    const file = fileInputElem.files[0];
+    const fileReader = new FileReader();
+    fileReader.onload = () => {
+        const standardMidiFile = new Uint8Array(fileReader.result);
+        const parsedData = picoAudio.parseSMF(standardMidiFile);
+        picoAudio.setData(parsedData);
+    };
+    fileReader.readAsArrayBuffer(file);
+});
 
 const startButton = document.createElement("button");
 startButton.innerText = "Start";
 startButton.addEventListener("click", () => {
-    const oscillator = audioContext.createOscillator();
-    oscillator.connect(gainNode);
-    oscillator.start();
+    picoAudio.init();
+    picoAudio.play();
 });
 document.body.appendChild(startButton);
 
 const stopButton = document.createElement("button");
 stopButton.innerText = "Stop";
 stopButton.addEventListener("click", () => {
-    let oscillatorGain = audioContext.createGain();
-    oscillatorGain.gain.value = 1;
-    oscillatorGain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
-    oscillator.connect(oscillatorGain).connect(gainNode);
-    oscillator.stop();
+    picoAudio.init();
+    picoAudio.pause();
 });
 document.body.appendChild(stopButton);
-
-const picoAudio = new PicoAudio();
