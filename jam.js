@@ -2,15 +2,16 @@ import PicoAudio from './PicoAudio/src/main.js';
 
 const picoAudio = new PicoAudio();
 
-const audioContext = new AudioContext;
 const fileInputElem = document.getElementById('midi-file');
+let parsedData = null;
 fileInputElem.addEventListener('change', () => {
     const file = fileInputElem.files[0];
     const fileReader = new FileReader();
     fileReader.onload = () => {
         const standardMidiFile = new Uint8Array(fileReader.result);
-        const parsedData = picoAudio.parseSMF(standardMidiFile);
+        parsedData = picoAudio.parseSMF(standardMidiFile);
         picoAudio.setData(parsedData);
+        makeChannelInfo();
     };
     fileReader.readAsArrayBuffer(file);
 });
@@ -30,3 +31,22 @@ stopButton.addEventListener("click", () => {
     picoAudio.pause();
 });
 document.body.appendChild(stopButton);
+
+function makeChannelInfo(){
+    let channelInfo = document.getElementById('ChannelInfo');
+    if (channelInfo != null) {
+        channelInfo.parentNode.removeChild(channelInfo);
+    }
+
+    channelInfo = document.createElement("p");
+    channelInfo.id = 'ChannelInfo';
+    channelInfo.innerText = "Channel Info: "
+    document.body.appendChild(channelInfo);
+
+    for (let i = 0; i < parsedData.channels.length; i++) {
+        const channel = document.createElement("p");
+        channel.id = `channel${i}`;
+        channel.innerText = `Notes in channel ${i}: ${parsedData.channels[i].notes.length}`;
+        channelInfo.appendChild(channel);
+    }
+};
