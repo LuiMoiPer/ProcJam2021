@@ -43,6 +43,10 @@ function makeChannelInfo(){
     channelInfo.innerText = "Channel Info: "
     document.body.appendChild(channelInfo);
 
+    if (parsedData == null) {
+        return;
+    }
+    
     for (let i = 0; i < parsedData.channels.length; i++) {
         const channel = document.createElement("p");
         channel.id = `channel${i}`;
