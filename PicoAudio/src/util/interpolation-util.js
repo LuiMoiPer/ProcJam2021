@@ -1,17 +1,17 @@
 /**
- * 補間を提供するクラス
+ * Class that provides interpolation
  */
 export default class InterpolationUtil {
     /**
-     * 波形を線形補間する
-     * @param {AudioBuffer} buffer 補間結果を入れるAudioBuffer
-     * @param {Array} vtBufs 仮想音源の配列([Float32Array, Float32Array])
+     * Linear interpolation of waveform
+     * @param {AudioBuffer} buffer AudioBuffer to put the interpolation result
+     * @param {Array} vtBufs Array of virtual sound sources ([Float32Array, Float32Array])
      */
     static lerpWave(buffer, vtBufs) {
-        // 仮想サンプルレート音源を本番音源に変換する //
+        // Convert a virtual sample rate sound source to a production sound source //
         const bufferSize = buffer.getChannelData(0).length;
         const vtBufsSize = vtBufs[0].length;
-        if (bufferSize == vtBufsSize) { // 線形補間の必要なし //
+        if (bufferSize == vtBufsSize) { // No need for linear interpolation //
             for (let ch=0; ch<2; ch++) {
                 const data = buffer.getChannelData(ch);
                 const vtBuf = vtBufs[ch];
@@ -19,14 +19,14 @@ export default class InterpolationUtil {
                     data[i] = vtBuf[i];
                 }
             }
-        } else { // 線形補間 //
+        } else { // Linear interpolation //
             const ratio = vtBufsSize / bufferSize;
             for (let ch=0; ch<2; ch++) {
                 const data = buffer.getChannelData(ch);
                 const vtBuf = vtBufs[ch];
                 for (let i=0; i<bufferSize; i++) {
-                    // 線形補間しながら波形を作成 //
-                    // TODO 音がまだ少し違和感あるので、スプライン補正に変更した方がいいかも //
+                    // Create waveform while linearly interpolating //
+                    // TODO The sound is still a little strange, so it may be better to change to spline correction. //
                     const idxF = i * ratio;
                     const idx1 = Math.trunc(idxF);
                     const idx2 = (idx1 + 1) % vtBufsSize;

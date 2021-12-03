@@ -1,18 +1,18 @@
 /**
- * time(秒)からtickを求める
+ * Find the tick from time (seconds)
  * @param {number} time
  * @returns {number} tick
  */
 export default function getTiming(time) {
     let imid = -1;
 
-    // tempo変更がある場合、timeを検索する //
+    // Search for time if there is a tempo change //
     if (this.tempoTrack && this.tempoTrack.length >= 1) {
-        // 最後のtimeを超える場合、最後のtickを返す
+        // If the last time is exceeded, the last tick is returned
         if (time >= this.tempoTrack[this.tempoTrack.length-1].time) {
             return this.tempoTrack[this.tempoTrack.length-1].timing;
         }
-        // 二分探索でtimeを探す
+        // Find time with binary search
         let imin = 0;
         let imax = this.tempoTrack.length - 1;
         while (true) {
@@ -35,16 +35,16 @@ export default function getTiming(time) {
     let baseTime = 0;
     let tick = 0;
     let tempo = 120;
-    if (imid >= 0) { // timeを探索して見つかった場合
-        // 引数timeに一番近いtimeを取得
+    if (imid >= 0) { // If you search for time and find it
+        // Get the time closest to the argument time
         const tempoObj = this.tempoTrack[imid];
         baseTime = tempoObj.time;
         tick = tempoObj.timing;
         tempo = tempoObj.value;
     }
 
-    // timeからtickを算出する
-    // 引数timeに一番近いtimeのtick ＋ 現在timeから残りのtickを算出 ＝ 現在のtick
+    // Calculate tick from time
+    // Tick ​​of time closest to argument time + Calculate remaining tick from current time = Current tick
     tick += (time - baseTime) / (60 / tempo / this.settings.resolution);
     return tick;
 }

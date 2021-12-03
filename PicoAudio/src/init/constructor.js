@@ -20,25 +20,25 @@ export default function picoAudioConstructor(argsObj) {
         WebMIDIPortOutputs: null,
         WebMIDIPortOutput: null,
         WebMIDIPort: -1, // -1:auto
-        WebMIDIPortSysEx: true, // MIDIデバイスのフルコントロールをするかどうか（SysExを使うかどうか）(httpsじゃないと使えない)
-        isReverb: true, // リバーブONにするか
+        WebMIDIPortSysEx: true, // Whether to take full control of the MIDI device (whether to use SysEx) (can only be used with https)
+        isReverb: true, // Whether to turn on the reverb
         reverbVolume: 1.5,
         initReverb: 10,
         isChorus: true,
         chorusVolume: 0.5,
         isCC111: true,
         loop: false,
-        isSkipBeginning: false, // 冒頭の余白をスキップ
-        isSkipEnding: true, // 末尾の空白をスキップ
+        isSkipBeginning: false, // Skip the opening margin
+        isSkipEnding: true, // Skip trailing blanks
         holdOnValue: 64,
-        maxPoly: -1, // 同時発音数 -1:infinity
-        maxPercPoly: -1, // 同時発音数(パーカッション) -1:infinity
-        isOfflineRendering: false, // TODO 演奏データを作成してから演奏する
-        isSameDrumSoundOverlap: false, // 同じドラムの音が重なることを許容するか
-        baseLatency: -1 // レイテンシの設定 -1:auto
+        maxPoly: -1, // Polyphony -1:infinity
+        maxPercPoly: -1, // Polyphony (percussion) -1:infinity
+        isOfflineRendering: false, // TODO Create performance data before playing
+        isSameDrumSoundOverlap: false, // Do you allow the sounds of the same drum to overlap?
+        baseLatency: -1 // Latency settings -1:auto
     };
 
-    // argsObjで設定値が指定されていたら上書きする
+    // Overwrite if the setting value is specified in argsObj
     rewriteVar(this, argsObj, "debug");
     for (let key in this.settings) {
         rewriteVar(this.settings, argsObj, key);
@@ -78,12 +78,12 @@ export default function picoAudioConstructor(argsObj) {
     this.onSongEndListener = null;
     this.baseLatency = 0.01;
 
-    // チャンネルの設定値（音色, 減衰, 音量） //
+    // Channel settings (timbre, attenuation, volume) //
     for (let i=0; i<17; i++) {
         this.channels.push([0, 0, 1]);
     }
 
-    // AudioContextがある場合はそのまま初期化、なければAudioContextを用いる初期化をinit()で
+    // If there is AudioContext, initialize it as it is, otherwise use init () to initialize using AudioContext
     if (argsObj && argsObj.audioContext) {
         this.init(argsObj);
     }

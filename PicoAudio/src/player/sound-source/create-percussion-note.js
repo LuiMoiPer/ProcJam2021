@@ -6,19 +6,19 @@ export default function createPercussionNote(option) {
     const gainNode = note.gainNode;
     const stopGainNode = note.stopGainNode;
     let start = note.start;
-    const velocity = 1; // ドラム全体の音量調整用
+    const velocity = 1; // For adjusting the volume of the entire drum
     const note2 = this.createBaseNote(option, false, false, true);
     const oscillator = note2.oscillator;
     const gainNode2 = note2.gainNode;
     const stopGainNode2 = note2.stopGainNode;
     const nextSameNoteOnInterval = option.nextSameNoteOnInterval;
 
-    // oscillator.frequency.setValueAtTime()がcurrentTimeより遅れると周波数設定がされないので対策
+    // If oscillator.frequency.setValueAtTime () lags behind currentTime, the frequency will not be set, so take measures.
     if (start < this.context.currentTime) start = this.context.currentTime;
     let stopAudioTime = 0;
     let stopAudioTime2 = 0;
     switch (option.pitch) {
-        // 元々のパーカッション音源 //
+        // Original percussion sound source //
         // Bass drum
         case 35:
         case 36:
@@ -178,7 +178,7 @@ export default function createPercussionNote(option) {
 
 
 
-        // 新しいパーカッション音源 //
+        // New percussion sound source //
 
         // Snare Drum
         case 37: // Side Stick
@@ -605,9 +605,9 @@ export default function createPercussionNote(option) {
 
 
 
-        // 新しいパーカッション音源（不採用） //
-        //     旧音源と重複するソース //
-        //     ESLintエラーが出るため、旧音源と重複するソースをコメントアウト //
+        // New percussion sound source (not adopted) //
+        //     Source that overlaps with the old sound source //
+        //     Comment out the source that overlaps with the old sound source due to an ESLint error. //
 
         // // Bass Drum
         // case 35: // Acoustic Bass Drum
@@ -875,8 +875,8 @@ export default function createPercussionNote(option) {
             break;
         }
     }
-    // 同じドラムの音が重ならないようにする機能
-    // ドラム再生中に次の同じドラムがすぐ鳴る場合、次が鳴る前に止めて音が重ならないようにする（同時発音数の増加を軽減する）
+    // A function to prevent the sounds of the same drum from overlapping
+    // If the next same drum sounds immediately during drum playback, stop it before the next one to prevent the sounds from overlapping (to reduce the increase in the number of simultaneous sounds).
     if (!this.settings.isSameDrumSoundOverlap && nextSameNoteOnInterval != -1) {
         if (stopAudioTime > nextSameNoteOnInterval) {
             stopAudioTime = nextSameNoteOnInterval;
@@ -885,13 +885,13 @@ export default function createPercussionNote(option) {
             stopAudioTime2 = nextSameNoteOnInterval;
         }
     }
-    // ドラム音停止時間を設定
+    // Set drum sound stop time
     this.stopAudioNode(source, start+stopAudioTime, stopGainNode);
     this.stopAudioNode(oscillator, start+stopAudioTime2, stopGainNode2);
-    // ドラム停止時間を設定
+    // Set drum stop time
     option.drumStopTime = option.startTime + (stopAudioTime >= stopAudioTime2 ? stopAudioTime : stopAudioTime2);
 
-    // 音をストップさせる関数を返す //
+    // Returns a function that stops the sound //
     return () => {
         this.stopAudioNode(source, 0, stopGainNode, true);
         this.stopAudioNode(oscillator, 0, stopGainNode2, true);

@@ -9,34 +9,34 @@ export default function parseSMF(_smf) {
         var syoriTimeS1 = Performance.now();
     }
 
-    // smf配列はデータ上書きするので_smfをディープコピーする
+    // Since the smf array overwrites the data, deep copy _smf
     const smf = new Uint8Array(_smf);
 
-    // SMFのフォーマットかどうかチェック //
+    // Check if it is in SMF format //
     // "MThd"
     if (smf[0] != 77 || smf[1] != 84 || smf[2] != 104 || smf[3] != 100)
         return "Not Sandard MIDI File.";
 
-    // 関数間でデータをやり取りするためのObject //
+    // Object for exchanging data between functions //
     const info = {};
     info.smf = smf;
     
-    // ヘッダー解析 //
+    // Header analysis //
     parseHeader.call(this, info);
     if (this.debug) {
         var syoriTimeS2 = Performance.now();
     }
 
-    // トラック解析 //
+    // Track analysis //
     parseTrack.call(this, info);
     if (this.debug) {
         var syoriTimeS3 = Performance.now();
     }
 
-    // MIDIイベント解析 //
+    // MIDI event analysis //
     parseEvent.call(this, info);
 
-    // return用のオブジェクトに情報を代入 //
+    // Assign information to the object for return //
     const data = {};
     data.header = info.header;
     data.tempoTrack = info.tempoTrack;
@@ -51,7 +51,7 @@ export default function parseSMF(_smf) {
     data.lastNoteOffTime = info.lastNoteOffTime;
     if (this.settings.isWebMIDI) {
         data.messages = info.messages;
-        data.smfData = new Uint8Array(smf); // lastStateを上書きしたsmfをコピー
+        data.smfData = new Uint8Array(smf); // Copy smf that overwrites lastState
     }
 
     if (this.debug) {

@@ -8,26 +8,26 @@ export default function init(argsObj) {
     const audioContext = argsObj && argsObj.audioContext;
     const picoAudio = argsObj && argsObj.picoAudio;
 
-    // AudioContextを生成 //
+    // Generate AudioContext //
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     this.context = audioContext ? audioContext : new AudioContext();
 
-    // マスターボリューム //
-    // リアルタイムで音量変更するためにdestination前にgainNodeを一つ噛ませる
+    // Master volume //
+    // Bit one gainNode before destination to change the volume in real time
     this.masterGainNode = this.context.createGain();
     this.masterGainNode.gain.value = this.settings.masterVolume;
 
-    // 仮想サンプルレート //
+    // Virtual sample rate //
     const sampleRate = this.context.sampleRate;
     const sampleRateVT = sampleRate >= 48000 ? 48000 : sampleRate;
 
-    // ホワイトノイズ //
-    if (picoAudio && picoAudio.whitenoise) { // 使いまわし
+    // White noise //
+    if (picoAudio && picoAudio.whitenoise) { // Reuse
         this.whitenoise = picoAudio.whitenoise;
     } else {
-        RandomUtil.resetSeed(); // 乱数パターンを固定にする（Math.random()を使わない）
-        // 再生環境のサンプルレートによって音が変わってしまうので //
-        // 一旦仮想サンプルレートで音源を作成する //
+        RandomUtil.resetSeed(); // Fix random number pattern (do not use Math.random ())
+        // Since the sound changes depending on the sample rate of the playback environment //
+        // Create a sound source once at a virtual sample rate //
         const seLength = 1;
         const sampleLength = sampleRate * seLength;
         const sampleLengthVT = sampleRateVT * seLength;
@@ -40,18 +40,18 @@ export default function init(argsObj) {
                 vtBuf[i] = r * 2 - 1;
             }
         }
-        // 仮想サンプルレート音源を本番音源に変換する //
+        // Convert a virtual sample rate sound source to a production sound source //
         this.whitenoise = this.context.createBuffer(2, sampleLength, sampleRate);
         InterpolationUtil.lerpWave(this.whitenoise, vtBufs);
     }
 
-    // リバーブ用のインパルス応答音声データ作成（てきとう） //
+    // Impulse response voice data creation for reverb //
     if (picoAudio && picoAudio.impulseResponse) { // 使いまわし
         this.impulseResponse = picoAudio.impulseResponse;
     } else {
-        RandomUtil.resetSeed(); // 乱数パターンを固定にする（Math.random()を使わない）
-        // 再生環境のサンプルレートによって音が変わってしまうので //
-        // 一旦仮想サンプルレートで音源を作成する //
+        RandomUtil.resetSeed(); // Fix random number pattern (do not use Math.random ())
+        // Since the sound changes depending on the sample rate of the playback environment //
+        // Create a sound source once at a virtual sample rate //
         const seLength = 3.5;
         const sampleLength = sampleRate * seLength;
         const sampleLengthVT = sampleRateVT * seLength;
@@ -70,12 +70,12 @@ export default function init(argsObj) {
                 vtBuf[i] = d;
             }
         }
-        // 仮想サンプルレート音源を本番音源に変換する //
+        // Convert a virtual sample rate sound source to a production sound source //
         this.impulseResponse = this.context.createBuffer(2, sampleLength, this.context.sampleRate);
         InterpolationUtil.lerpWave(this.impulseResponse, vtBufs);
     }
 
-    // リバーブ用のAudioNode作成・接続 //
+    // Create and connect AudioNode for reverb //
     this.convolver = this.context.createConvolver();
     this.convolver.buffer = this.impulseResponse;
     this.convolver.normalize = true;
@@ -85,7 +85,7 @@ export default function init(argsObj) {
     this.convolverGainNode.connect(this.masterGainNode);
     this.masterGainNode.connect(this.context.destination);
 
-    // コーラス用のAudioNode作成・接続 //
+    // Create and connect AudioNode for chorus //
     this.chorusDelayNode = this.context.createDelay();
     this.chorusGainNode = this.context.createGain();
     this.chorusOscillator = this.context.createOscillator();
@@ -101,7 +101,7 @@ export default function init(argsObj) {
     this.masterGainNode.connect(this.context.destination);
     this.chorusOscillator.start(0);
 
-    // レイテンシの設定 //
+    // Latency settings //
     this.baseLatency = this.context.baseLatency || this.baseLatency;
     if (this.settings.baseLatency != -1) {
         this.baseLatency = this.settings.baseLatency;

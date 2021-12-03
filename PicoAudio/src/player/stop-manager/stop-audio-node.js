@@ -1,35 +1,35 @@
 export default function stopAudioNode(tar, time, stopGainNode, isNoiseCut) {
-    const isImmed = time <= this.context.currentTime; // 即時ストップか？
+    const isImmed = time <= this.context.currentTime; // Is it an immediate stop?
 
-    // 予約ストップ //
+    // Reservation stop //
     let vol1Time = time-0.005;
     let stopTime = time;
 
-    // 時間設定 //
-    if (isImmed) { // 即時ストップ
+    // Time settings //
+    if (isImmed) { // Immediate stop
         if (!isNoiseCut) {
             stopTime = this.context.currentTime;
-        } else {  // ノイズカット
+        } else {  // Noise cut
             vol1Time = this.context.currentTime;
             stopTime = this.context.currentTime+0.005;
         }
     }
 
-    // 音の停止 //
-    try { // 通常の音停止処理
+    // Stopping the sound //
+    try { // Normal sound stop processing
         if (!isNoiseCut) {
             tar.stop(stopTime);
-        } else { // ノイズカット（音の終わりに短いフェードアウトを入れる）
+        } else { // Noise cut (with a short fade-out at the end of the sound)
             tar.stop(stopTime);
             stopGainNode.gain.cancelScheduledValues(0);
             stopGainNode.gain.setValueAtTime(1, vol1Time);
             stopGainNode.gain.linearRampToValueAtTime(0, stopTime);
         }
-    } catch(e) { // iOS用 (stopが２回以上使えないので、代わりにstopGainNodeでミュートにする)
+    } catch(e) { // For iOS (stop cannot be used more than once, so mute with stopGainNode instead)
         stopGainNode.gain.cancelScheduledValues(0);
         if (!isNoiseCut) {
             stopGainNode.gain.setValueAtTime(0, stopTime);
-        } else { // ノイズカット（音の終わりに短いフェードアウトを入れる）
+        } else { // Noise cut (with a short fade-out at the end of the sound)
             stopGainNode.gain.setValueAtTime(1, vol1Time);
             stopGainNode.gain.linearRampToValueAtTime(0, stopTime);
         }

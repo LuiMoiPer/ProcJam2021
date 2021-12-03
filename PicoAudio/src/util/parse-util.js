@@ -1,10 +1,10 @@
 export default class ParseUtil {
     /**
-     * バイト配列内に含まれる"データ長"を数値に変換する
-     * @param {Uint8Array} arr バイト配列
-     * @param {number} startIdx データ長の始点の場所(index)
-     * @param {number} endIdx データ長の終点の場所(index) - 1
-     * @returns {number} データ長
+     * Convert the "data length" contained in the byte array to a number
+     * @param {Uint8Array} arr Byte array
+     * @param {number} startIdx Location of the starting point of the data length(index)
+     * @param {number} endIdx Location of the end point of the data length(index) - 1
+     * @returns {number} Data length
      */
     static getInt(arr, startIdx, endIdx) {
         let value = 0;
@@ -15,11 +15,11 @@ export default class ParseUtil {
     }
 
     /**
-     * バイト配列内に含まれる"可変長のデータ長"を数値に変換する
-     * @param {Uint8Array} arr バイト配列
-     * @param {number} startIdx データ長の始点の場所(index)
-     * @param {number} endIdx データ長の終点の場所(index) - 1 (終点の場所は多くてもかまわない)
-     * @returns {Array} [データ長, "可変長のデータ長"のバイト数]
+     * Convert the "variable length data length" contained in the byte array to a number
+     * @param {Uint8Array} arr Byte array
+     * @param {number} startIdx Location of the starting point of the data length (index)
+     * @param {number} endIdx End point location of data length (index) -1 (There can be many end point locations)
+     * @returns {Array} [Data length, number of bytes of "variable length data length"]
      */
     static variableLengthToInt(arr, startIdx, endIdx) {
         let i = startIdx;
@@ -34,17 +34,17 @@ export default class ParseUtil {
     }
 
     /**
-     * デルタタイムの順番になるように配列に挿入
-     * @param {PicoAudio} that PicoAudioインスタンス
-     * @param {number} ch チャンネル番号
-     * @param {number} time デルタタイム
-     * @param {number} p 対象のMIDIイベントの場所(SMFデータ内の位置)
-     * @param {number} len MIDIイベントの長さ
+     * Insert into an array in delta time order
+     * @param {PicoAudio} that PicoAudio instance
+     * @param {number} ch Channel number
+     * @param {number} time Delta time
+     * @param {number} p Location of the target MIDI event (position in SMF data)
+     * @param {number} len MIDI event length
      */
     static chIndicesInsert(that, ch, time, p, len) {
         const indices = ch.indices;
 
-        // デルタタイムの順番になるようにリスト配列に挿入 //
+        // Insert into list array in delta time order //
         if (ch.indicesLength >= 4 && time < indices[ch.indicesFoot]) {
             // Insert //
             while (ch.indicesCur != -1) {

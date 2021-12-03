@@ -23,7 +23,7 @@ import startWebMIDI from './web-midi/start-web-midi.js';
 
 class PicoAudio {
     /**
-     * PicoAudioクラスのコンストラクタ
+     * PicoAudio class constructor
      * @param {Object} argsObj
      */
     constructor(argsObj) {
@@ -31,7 +31,7 @@ class PicoAudio {
     }
 
     /**
-     * 初期化・準備
+     * Initialization and preparation
      * @param {Object} argsObj
      */
     init(argsObj) {
@@ -39,50 +39,50 @@ class PicoAudio {
     }
 
     /**
-     * MIDIファイル(SMF)を解析する
-     * @param {Uint8Array} smf MIDIファイルの内容が入ったUint8Arrayオブジェクト
-     * @returns {Object} 再生用の情報が入ったオブジェクト
+     * Analyze MIDI files (SMF)
+     * @param {Uint8Array} smf Uint8Array object containing the contents of a MIDI file
+     * @returns {Object} An object that contains information for playback
      */
     parseSMF(smf) {
         return parseSMF.call(this, smf);
     }
 
     /**
-     * 再生用のデータをセットする
-     * @param {Object} data PicoAudio.parseSMF()で返されたオブジェクト
+     * Set the data for playback
+     * @param {Object} data Object returned by PicoAudio.parseSMF ()
      */
     setData(data) {
         return setData.call(this, data);
     }
 
     /**
-     * 再生
-     * @param {boolean} _isSongLooping PicoAudio内部で使う引数
+     * reproduction
+     * @param {boolean} _isSongLooping Arguments used inside PicoAudio
      */
     play(_isSongLooping) {
         return play.call(this, _isSongLooping);
     }
 
     /**
-     * 一時停止
-     * @param {boolean} _isSongLooping PicoAudio内部で使う引数
+     * Stop for a while
+     * @param {boolean} _isSongLooping Arguments used inside PicoAudio
      */
     pause(_isSongLooping) {
         return stop.call(this, _isSongLooping);
     }
 
     /**
-     * 停止
-     * @param {boolean} _isSongLooping PicoAudio内部で使う引数
+     * stop
+     * @param {boolean} _isSongLooping Arguments used inside PicoAudio
      */
     stop(_isSongLooping) {
         return stop.call(this, _isSongLooping);
     }
 
     /**
-     * リセット
-     * @param {boolean} _isSongLooping PicoAudio内部で使う引数
-     * @param {boolean} _isLight PicoAudio内部で使う引数
+     * reset
+     * @param {boolean} _isSongLooping Arguments used inside PicoAudio
+     * @param {boolean} _isLight Arguments used inside PicoAudio
      */
     initStatus(_isSongLooping, _isLight) {
         return initStatus.call(this, _isSongLooping, _isLight);
@@ -92,17 +92,17 @@ class PicoAudio {
         this.states.startTime -= offset;
     }
 
-    // 時関関係 //
+    // Time relationship //
     /**
-     * tickからtime(秒)を求める
+     * Find time (seconds) from tick
      * @param {number} tick
-     * @returns {number} time(秒)
+     * @returns {number} time (seconds)
      */
     getTime(tick) {
         return getTime.call(this, tick);
     }
     /**
-     * time(秒)からtickを求める
+     * Find the tick from time (seconds)
      * @param {number} time
      * @returns {number} tick
      */
@@ -110,37 +110,37 @@ class PicoAudio {
         return getTiming.call(this, time);
     }
 
-    // 再生・音源関係 //
+    // Playback / sound source related //
     /**
-     * 再生処理（Web Audio API の oscillator等で音を鳴らす）
+     * Playback processing (sounds with oscillator of Web Audio API, etc.)
      * @param {Object} option
      * @param {boolean} isDrum
      * @param {boolean} isExpression
      * @param {boolean} nonChannel
      * @param {boolean} nonStop
-     * @returns {Object} AudioNodeやパラメータを返す
+     * @returns {Object} Returns AudioNode and parameters
      */
     createBaseNote(option, isDrum, isExpression, nonChannel, nonStop) {
         return createBaseNote.call(this, option, isDrum, isExpression, nonChannel, nonStop);
     }
     /**
-     * 音源（パーカッション以外）
+     * Sound source (other than percussion)
      * @param {Object} option
-     * @returns {Object} 音をストップさせる関数を返す
+     * @returns {Object} Returns a function that stops the sound
      */
     createNote(option) {
         return createNote.call(this, option);
     }
     /**
-     * パーカッション音源
+     * Percussion sound source
      * @param {Object} option
-     * @returns {Object} 音をストップさせる関数を返す
+     * @returns {Object} Returns a function that stops the sound
      */
     createPercussionNote(option) {
         return createPercussionNote.call(this, option);
     }
 
-    // 停止管理関係 //
+    // Stop management related //
     stopAudioNode(tar, time, stopGainNode, isNoiseCut) {
         return stopAudioNode.call(this, tar, time, stopGainNode, isNoiseCut);
     }
@@ -158,7 +158,7 @@ class PicoAudio {
         return startWebMIDI.call(this);
     }
 
-    // インターフェース関係 //
+    // Interface related //
     addEventListener(type, func) {
         // type = EventName (play, stop, noteOn, noteOff, songEnd)
         this.events.push({type: type, func: func});

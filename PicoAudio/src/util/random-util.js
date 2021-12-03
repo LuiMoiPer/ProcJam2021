@@ -1,9 +1,9 @@
 /**
- * 固定パターンの乱数を提供するクラス
+ * A class that provides a fixed pattern of random numbers
  */
 export default class RandomUtil {
     /**
-     * 乱数のシード値をリセットする
+     * Reset the seed value of a random number
      */
     static resetSeed() {
         this.init = true;
@@ -14,11 +14,11 @@ export default class RandomUtil {
     }
 
     /**
-     * 乱数を返す
+     * Returns a random number
      * 
-     *     Math.random() と違い、毎回固定パターンで乱数が返される
-     * Xorshiftアルゴリズム
-     * @returns {number} 乱数
+     *     Math.random() Unlike, a random number is returned in a fixed pattern every time
+     * Xorshift algorithm
+     * @returns {number} random number
      */
     static random() {
         if (!this.init) this.resetSeed();

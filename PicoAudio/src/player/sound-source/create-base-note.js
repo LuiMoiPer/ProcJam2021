@@ -1,5 +1,5 @@
 export default function createBaseNote(option, isDrum, isExpression, nonChannel, nonStop) {
-    // 最低限の変数を準備（無音の場合は処理終了するため） //
+    // Prepare the minimum variables (because the process ends when there is no sound) //
     const settings = this.settings;
     const context = this.context;
     const songStartTime = this.states.startTime;
@@ -8,10 +8,10 @@ export default function createBaseNote(option, isDrum, isExpression, nonChannel,
     const velocity = (option.velocity) * Number(nonChannel ? 1 : (this.channels[channel][2] != null ? this.channels[channel][2] : 1)) * settings.generateVolume;
     let isGainValueZero = true;
 
-    // 無音の場合は処理終了 //
+    // If there is no sound, the process ends //
     if (velocity <= 0) return {isGainValueZero: true};
 
-    // 音量の変化を設定 //
+    // Set the volume change //
     const expGainValue = velocity * ((option.expression ? option.expression[0].value : 100) / 127);
     const expGainNode = context.createGain();
     expGainNode.gain.value = expGainValue;
@@ -29,12 +29,12 @@ export default function createBaseNote(option, isDrum, isExpression, nonChannel,
         }
     }
 
-    // 無音の場合は処理終了 //
-    if (isGainValueZero) { // 音量が常に0なら音を鳴らさない
+    // If there is no sound, the process ends //
+    if (isGainValueZero) { // If the volume is always 0, there is no sound
         return {isGainValueZero: true};
     }
 
-    // 全ての変数を準備 //
+    // Prepare all variables //
     const start = option.startTime + songStartTime + baseLatency;
     const stop = option.stopTime + songStartTime + baseLatency;
     const pitch = settings.basePitch * Math.pow(Math.pow(2, 1/12), (option.pitch || 69) - 69);
@@ -45,8 +45,8 @@ export default function createBaseNote(option, isDrum, isExpression, nonChannel,
     const gainNode = context.createGain();
     const stopGainNode = context.createGain();
 
-    // ドラムはホワイトノイズ、ドラム以外はoscillatorを設定 //
-    // oscillatorはピッチ変動も設定 //
+    // White noise is set for drums, and oscillator is set for non-drums. //
+    // oscillator also sets pitch fluctuation //
     if (!isDrum) {
         oscillator.type = option.type || "sine";
         oscillator.detune.value = 0;
@@ -64,16 +64,16 @@ export default function createBaseNote(option, isDrum, isExpression, nonChannel,
         oscillator.buffer = this.whitenoise;
     }
 
-    // パンの初期値を設定 //
+    // Set the initial value of bread //
     const panValue = option.pan && option.pan[0].value != 64 ? (option.pan[0].value / 127) * 2 - 1 : 0;
     initPanValue(context, panNode, panValue);
 
-    // パンの変動を設定 //
+    // Set bread fluctuations //
     if (context.createStereoPanner || context.createPanner) {
-        // StereoPannerNode or PannerNode がどちらかでも使える
+        // Either StereoPannerNode or PannerNode can be used
         let firstNode = true;
         if (context.createStereoPanner) {
-            // StereoPannerNode が使える
+            // StereoPannerNode can be used
             option.pan ? option.pan.forEach((p) => {
                 if (firstNode) {
                     firstNode = false;
@@ -86,9 +86,9 @@ export default function createBaseNote(option, isDrum, isExpression, nonChannel,
                 panNode.pan.setValueAtTime(v, t);
             }) : false;
         } else if (context.createPanner) {
-            // StereoPannerNode が未サポート、PannerNode が使える
+            // StereoPannerNode is not supported, PannerNode can be used
             if (panNode.positionX) {
-                // setValueAtTimeが使える
+                // setValueAtTime can be used
                 // Old Browser
                 let firstPan = true;
                 option.pan ? option.pan.forEach((p) => {
@@ -106,7 +106,7 @@ export default function createBaseNote(option, isDrum, isExpression, nonChannel,
                 }) : false;
             } else {
                 // iOS
-                // setValueAtTimeが使えないためsetTimeoutでパンの動的変更
+                // Dynamic change of pan with setTimeout because setValueAtTime cannot be used
                 option.pan ? option.pan.forEach((p) => {
                     if (firstNode) {
                         firstNode = false;
@@ -129,17 +129,17 @@ export default function createBaseNote(option, isDrum, isExpression, nonChannel,
         oscillator.connect(panNode);
         panNode.connect(expGainNode);
     } else {
-        // StereoPannerNode、PannerNode が未サポート
+        // StereoPannerNode, PannerNode not supported
         oscillator.connect(expGainNode);
     }
 
-    // AudioNodeを接続 //
+    // Connect AudioNode //
     expGainNode.connect(gainNode);
     gainNode.connect(stopGainNode);
     stopGainNode.connect(this.masterGainNode);
     this.masterGainNode.connect(context.destination);
 
-    // モジュレーションの変動を設定 //
+    // Set modulation fluctuation //
     let modulationOscillator;
     let modulationGainNode;
     if (!isDrum && option.modulation && (option.modulation.length >= 2 || option.modulation[0].value > 0)) {
@@ -168,7 +168,7 @@ export default function createBaseNote(option, isDrum, isExpression, nonChannel,
         modulationGainNode.connect(oscillator.frequency);
     }
 
-    // リバーブの変動を設定 //
+    // Set reverb variation //
     if (this.settings.isReverb && option.reverb && (option.reverb.length >= 2 || option.reverb[0].value > 0)) {
         const convolver = this.convolver;
         const convolverGainNode = context.createGain();
@@ -192,7 +192,7 @@ export default function createBaseNote(option, isDrum, isExpression, nonChannel,
         convolverGainNode.connect(convolver);
     }
 
-    // コーラスの変動を設定 //
+    // Set chorus variation //
     if (this.settings.isChorus && option.chorus && (option.chorus.length >= 2 || option.chorus[0].value > 0)) {
         const chorusDelayNode = this.chorusDelayNode;
         const chorusGainNode = context.createGain();
@@ -216,19 +216,19 @@ export default function createBaseNote(option, isDrum, isExpression, nonChannel,
         chorusGainNode.connect(chorusDelayNode);
     }
 
-    // モジュレーションをスタート //
+    // Start modulation //
     if (modulationOscillator) {
         modulationOscillator.start(start);
         this.stopAudioNode(modulationOscillator, stop, modulationGainNode);
     }
 
-    // oscillator又はホワイトノイズをスタート //
+    // Start oscillator or white noise //
     oscillator.start(start);
     if (!isDrum && !nonChannel && !nonStop) {
         this.stopAudioNode(oscillator, stop, stopGainNode);
     }
 
-    // AudioNodeやパラメータを返す //
+    // Returns AudioNode and parameters //
     return {
         start: start,
         stop: stop,
@@ -244,7 +244,7 @@ export default function createBaseNote(option, isDrum, isExpression, nonChannel,
 }
 
 /**
- * パンの初期値を設定
+ * Set the initial value of bread
  * @param {PannerNode | StereoPannerNode} panNode 
  * @param {number} panValue 
  */
@@ -261,8 +261,8 @@ function initPanValue(context, panNode, panValue) {
 }
 
 /**
- * pan値を基に、PannerNode用の値を{x, y, z}で返す
- * @param {number} panValue panの値
+ * Returns the value for PannerNode as {x, y, z} based on the pan value
+ * @param {number} panValue value of pan
  * @returns Object{x, y, z}
  */
 function convPosition(panValue) {

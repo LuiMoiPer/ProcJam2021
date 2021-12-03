@@ -7,21 +7,21 @@ export default function play(isSongLooping) {
     const trigger = this.trigger;
     const states = this.states;
 
-    // Chrome Audio Policy 対策 //
+    // Chrome Audio Policy measures //
     if (context.resume) context.resume();
 
-    // 再生中の場合、処理しない //
+    // If playing, do not process //
     if (states.isPlaying) return;
 
-    // WebMIDIの場合、少し待ってから再生する //
+    // For WebMIDI, wait a moment and then play //
     if (settings.isWebMIDI && !isSongLooping) {
-        // Web MIDI API使用時はstop()から800ms程待機すると音がバグりにくい
+        // When using the Web MIDI API, if you wait about 800ms from stop(), the sound will not be buggy.
         if (states.webMIDIWaitState != "completed") {
-            if (states.webMIDIWaitState != "waiting") { // play()連打の対策
-                // stop()から1000ms後にplay()を実行
+            if (states.webMIDIWaitState != "waiting") { // play() Countermeasures for repeated hits
+                // Execute play() 1000ms after stop()
                 states.webMIDIWaitState = "waiting";
                 let waitTime = 1000 - (context.currentTime - states.webMIDIStopTime)*1000;
-                if (states.webMIDIStopTime == 0) waitTime = 1000; // MIDI Portをopenして最初に呼び出すときも少し待つ
+                if (states.webMIDIStopTime == 0) waitTime = 1000; //Wait a moment when you open the MIDI Port and call it for the first time
                 setTimeout(() => {
                     states.webMIDIWaitState = "completed";
                     states.isPlaying = false;
@@ -34,14 +34,14 @@ export default function play(isSongLooping) {
         }
     }
 
-    // 変数を用意 //
+    // Prepare variables //
     const currentTime = context.currentTime;
     this.isPlayed = true;
     states.isPlaying = true;
     states.startTime = !states.startTime && !states.stopTime ? currentTime : (states.startTime + currentTime - states.stopTime);
     states.stopFuncs = [];
 
-    // 冒頭の余白をスキップ //
+    // Skip the opening margin //
     if (settings.isSkipBeginning) {
         const firstNoteOnTime = this.firstNoteOnTime;
         if (-states.startTime + currentTime < firstNoteOnTime) {
@@ -49,18 +49,18 @@ export default function play(isSongLooping) {
         }
     }
 
-    // 曲終了コールバックを予約 //
+    // Book end song callback //
     let reserveSongEnd;
     const reserveSongEndFunc = () => {
         this.clearFunc("rootTimeout", reserveSongEnd);
         const finishTime = (settings.isCC111 && this.cc111Time != -1) ? this.lastNoteOffTime : this.getTime(Number_MAX_SAFE_INTEGER);
         if (finishTime - context.currentTime + states.startTime <= 0) {
-            // 予定の時間以降に曲終了
+            // Song ends after the scheduled time
             trigger.songEnd();
             this.onSongEnd();
             this.fireEvent('songEnd');
         } else {
-            // 処理落ちしたりしてまだ演奏中の場合、1ms後に曲終了コールバックを呼び出すよう予約
+            // If it is still playing due to processing failure, reserve to call the song end callback after 1ms
             reserveSongEnd = setTimeout(reserveSongEndFunc, 1);
             this.pushFunc({
                 rootTimeout: reserveSongEnd,
@@ -78,14 +78,14 @@ export default function play(isSongLooping) {
         stopFunc: () => { clearTimeout(reserveSongEnd); }
     });
 
-    // 再生開始をコールバックに通知 //
+    // Notify callback of playback start //
     trigger.play();
     this.fireEvent('play');
 
-    // 1ms毎コールバックの準備 //
+    // Preparing callbacks every 1ms //
     UpdateNote.init(this, currentTime);
 
-    // 1ms毎コールバックを開始 //
+    // Start callback every 1ms //
     const reserve = setInterval(() => {
         UpdateNote.update(this);
     }, 1);

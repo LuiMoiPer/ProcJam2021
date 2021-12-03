@@ -1,30 +1,30 @@
 import ParseUtil from '../../util/parse-util.js';
 
 export default function parseTrack(info) {
-    // 関数呼び出し元からデータをもらう //
+    // Get data from the function caller //
     const smf = info.smf;
     let p = info.p;
     const header = info.header;
     const channels = info.channels;
 
-    // SMFのトラックチャンクの解析・"SMF読み込み順序配列"を作成 //
-    //   全トラックを解析しながら、SMFを読む順番を記録した配列を作成する
-    //   読み込む順番は、この解析でデルタタイム順になるようソートしておく
-    //   SMFのMIDIイベント解析時は、上記配列から「次はMIDIファイルの何バイト目を見るか」を取得して解析する
-    //   上記配列はリスト構造の配列のように使う（リスト構造にすることで配列のinsert処理を高速化する）
+    // Analysis of SMF track chunks. Create "SMF read order array" //
+    //   Create an array that records the reading order of SMF while analyzing all tracks
+    //   The reading order is sorted so that it is in delta time order in this analysis.
+    //   When analyzing MIDI events in SMF, acquire "what byte of the MIDI file to look at next" from the above array and analyze it.
+    //   The above array is used like an array with a list structure (the list structure speeds up the insert process of the array).
     // 
-    // ■配列イメージ（json風）■
+    // ■ Array image (json style) ■
     // [
     //     {
-    //         tick : このMIDIイベントのTick,
-    //         smfMesLength : １つのMIDIイベントの長さ,
-    //         smfPtr : このMIDIイベントはMIDIファイルの何バイト目にあるか,
-    //         nextIndicesPtr : 次のオブジェクトはリスト配列の何番目にあるか
+    //         tick : Tick ​​of this MIDI event,
+    //         smfMesLength : Length of one MIDI event,
+    //         smfPtr : In what byte of the MIDI file this MIDI event is,
+    //         nextIndicesPtr : What position in the list array is the next object?
     //     },
     //     ...
     // ]
     // 
-    // ■実際の配列イメージ■
+    // ■ Actual array image ■
     // [tick, smfMesLength, smfPtr, nextIndicesPtr, ...]
 
     const tempoTrack = [];
@@ -61,7 +61,7 @@ export default function parseTrack(info) {
                 case 0xB: // Control Change - B[ch],,
                 case 0xE: // PitchBend Change - E[ch],,
                 {
-                    // チャンネル毎に仕分けた後に解析する
+                    // Analyze after sorting by channel
                     lastState = smf[p];
                     const ch = channels[lastState&0x0F];
                     ParseUtil.chIndicesInsert(this, ch, tick, p, 3);
@@ -71,7 +71,7 @@ export default function parseTrack(info) {
                 case 0xC: // Program Change - C[ch],
                 case 0xD: // Channel Pre - D[ch],
                 {
-                    // チャンネル毎に仕分けた後に解析する
+                    // Analyze after sorting by channel
                     lastState = smf[p];
                     const ch = channels[lastState&0x0F];
                     ParseUtil.chIndicesInsert(this, ch, tick, p, 2);
@@ -80,7 +80,7 @@ export default function parseTrack(info) {
                 }
                 // SysEx Events or Meta Events - F[ch], ...
                 case 0xF: {
-                    //lastState = smf[p]; <- ランニングステートは無い
+                    //lastState = smf[p]; <- There is no running state
                     switch (smf[p]) {
                         case 0xF0:
                         case 0xF7: {
@@ -94,7 +94,7 @@ export default function parseTrack(info) {
                                 && smf[p+3] == 0x7f
                                 && smf[p+4] == 0x04
                                 && smf[p+5] == 0x01) {
-                                // 全チャンネルにMasterVolumeイベントを挿入する
+                                // Insert Master Volume event on all channels
                                 for (let i=0; i<16; i++) {
                                     const ch = channels[i];
                                     ParseUtil.chIndicesInsert(this, ch, tick, p, lengthAry[0]);
@@ -138,7 +138,7 @@ export default function parseTrack(info) {
                                     tick += (this.settings.isSkipEnding ? 0 : header.resolution) - dt;
                                     break;
                                 case 0x51: // Tempo
-                                    // 全チャンネルにTempoイベントを挿入する
+                                    // Insert Tempo events on all channels
                                     for (let i=0; i<16; i++) {
                                         const ch = channels[i];
                                         ParseUtil.chIndicesInsert(this, ch, tick, p, 6);
@@ -175,27 +175,27 @@ export default function parseTrack(info) {
                     if (lastState == null)
                         return "Irregular SMF. (" + p + " byte addr)";
                     p--;
-                    smf[p] = lastState; // 上書き
+                    smf[p] = lastState; // Overwrite
                     lastState = null;
                 }
             }
             // WebMIDIAPI
             if (this.settings.isWebMIDI) {
                 if (lastState != null) {
-                    // WebMIDI用に17chに全てのMIDIイベントを入れる
+                    // Put all MIDI events in 17ch for WebMIDI
                     ParseUtil.chIndicesInsert(this, channels[16], tick, cashP, p - cashP);
                 }
             }
         }
         if (!this.settings.isSkipEnding && songLength < tick) songLength = tick;
-        // リスト配列のポインタを初期化
+        // Initialize list array pointer
         for (let i=0; i<channels.length; i++) {
             channels[i].indicesCur = channels[i].indicesHead;
             channels[i].indicesPre = channels[i].indicesHead;
         }
     }
 
-    // 関数呼び出し元にデータを返す //
+    // Returns data to the function caller //
     info.p = p;
     info.tempoTrack = tempoTrack;
     info.beatTrack = beatTrack;

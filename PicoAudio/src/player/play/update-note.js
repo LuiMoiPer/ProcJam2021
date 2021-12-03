@@ -4,7 +4,7 @@ import {Performance} from '../../util/ponyfill.js';
 
 export default class UpdateNote {
     /**
-     * 1ms毎処理用の変数を初期化
+     * Initialize variables for processing every 1ms
      */
     static init(picoAudio, currentTime) {
         this.updatePreTime = Performance.now();
@@ -17,9 +17,9 @@ export default class UpdateNote {
     }
 
     /**
-     * 再生中、1ms毎に呼ばれるコールバック
-     * （ブラウザの制限で実際は最短4ms毎に呼ばれる）
-     * @returns {number} 現在の時間
+     * Callback called every 1ms during playback
+     * (Actually, it is called every 4ms at the shortest due to browser restrictions)
+     * @returns {number} Current time
      */
     static update(picoAudio) {
         const context = picoAudio.context;
@@ -34,9 +34,9 @@ export default class UpdateNote {
         let cTimeSum = this.cTimeSum;
         let cnt = this.cnt;
 
-        // サウンドが重くないか監視（フリーズ対策） //
-        //   performance.now()とAudioContext.currentTimeの時間差を計算し
-        //   AudioContext.currentTimeが遅れていたら処理落ちしていると判断する
+        // Monitor if the sound is heavy (anti-freeze) //
+        //   Calculate the time difference between performance.now () and AudioContext.currentTime
+        //   If AudioContext.currentTime is delayed, it is judged that processing has failed.
         let updateBufTime = updateNowTime - updatePreTime;
         const pTime = updateNowTime;
         const cTime = context.currentTime * 1000;
@@ -47,29 +47,29 @@ export default class UpdateNote {
         const latencyTime = pTimeSum - cTimeSum;
         states.latencyTime = latencyTime;
 
-        // サウンドが重い場合、負荷軽減処理を発動するリミットを上げていく //
-        if (latencyTime >= 100) { // currentTimeが遅い（サウンドが重い）
+        // If the sound is heavy, increase the limit to activate the load reduction process. //
+        if (latencyTime >= 100) { // currentTime is slow (sound is heavy)
             states.latencyLimitTime += latencyTime;
             cTimeSum += 100;
-        } else if (latencyTime <= -100) { // currentTimeが速い（誤差）
+        } else if (latencyTime <= -100) { // currentTime is fast (error)
             cTimeSum = pTimeSum;
         } else {
-            if (states.latencyLimitTime > 0) { // currentTimeが丁度いい
+            if (states.latencyLimitTime > 0) { // currentTime is just right
                 states.latencyLimitTime -= updateBufTime*0.003;
                 if (states.latencyLimitTime < 0) states.latencyLimitTime = 0;
             }
         }
 
-        // ノートを先読み度合いを自動調整（予約しすぎると重くなる） //
+        // Automatically adjusts the degree of look-ahead of notes (it becomes heavy if you make too many reservations) //
         states.updateIntervalTime = updateBufTime;
-        if (states.updateBufTime < updateBufTime) { // 先読み遅れている場合
+        if (states.updateBufTime < updateBufTime) { // If the look-ahead is delayed
             states.updateBufTime = updateBufTime;
-        } else { // 先読み量に余裕がある場合
-            // 先読み量を少しずつ減らす //
+        } else { // When there is a margin in the read-ahead amount
+            // Gradually reduce the amount of look-ahead //
             if (states.updateBufMaxTime > 350) {
                 states.updateBufMaxTime -= states.updateBufMaxTime*0.002;
             }
-            // 先読み量を少しずつ増やす //
+            // Increase the read-ahead amount little by little //
             if (states.updateBufTime < 20) {
                 states.updateBufTime += states.updateBufTime*0.0005;
             }
@@ -77,16 +77,16 @@ export default class UpdateNote {
                 states.updateBufMaxTime += states.updateBufMaxTime*0.002;
             }
         }
-        // 先読み量が足りなくなった場合
+        // When the read-ahead amount is insufficient
         if (states.updateBufTime > states.updateBufMaxTime) {
             if (updateBufTime >= 900 && states.latencyLimitTime <= 150) {
-                // バックグラウンドっぽくて重くない場合、バックグラウンド再生
+                // Background playback if it looks like background and is not heavy
                 states.updateBufMaxTime += updateBufTime;
-            } else { // 通常
+            } else { // generally
                 const tempTime = updateBufTime - states.updateBufMaxTime;
                 states.updateBufTime = states.updateBufMaxTime;
                 
-                // 先読み量が小さい場合大きくする
+                // If the look-ahead amount is small, increase it.
                 if (states.updateBufMaxTime < 10) {
                     states.updateBufTime = states.updateBufMaxTime;
                     states.updateBufMaxTime *= 1.25;
@@ -97,18 +97,18 @@ export default class UpdateNote {
             if (states.updateBufMaxTime > 1100) states.updateBufMaxTime = 1100;
         }
 
-        // サウンドが重すぎる場合、先読み度合いを小さくして負荷軽減 //
+        // If the sound is too heavy, reduce the look-ahead to reduce the load //
         if (states.latencyLimitTime > 150) {
             cTimeSum = pTimeSum;
             states.latencyLimitTime -= 5;
             if (states.latencyLimitTime > 1000) states.latencyLimitTime = 1000;
-            // ノート先読みをかなり小さくする（フリーズ対策）
+            // Make note look-ahead considerably smaller (freeze countermeasures)
             states.updateBufMaxTime = 1;
             states.updateBufTime = 1;
             updateBufTime = 1;
         }
 
-        // 再生処理 //
+        // Playback process //
         for (let ch=0; ch<16; ch++) {
             const notes = picoAudio.playData.channels[ch].notes;
             let idx = states.playIndices[ch];
@@ -116,22 +116,22 @@ export default class UpdateNote {
                 const note = notes[idx];
                 const curTime = cnt == 0 ? this.initCurrentTime - states.startTime
                     : context.currentTime - states.startTime;
-                // 終わったノートは演奏せずにスキップ
+                // Skip the finished notes without playing
                 if (curTime >= note.stopTime) continue;
-                // （シークバーで途中から再生時）startTimeが過ぎたものは鳴らさない
+                // (When playing from the middle with the seek bar) The one whose startTime has passed does not sound
                 if (cnt == 0 && curTime > note.startTime + baseLatency) continue;
-                // 演奏開始時間 - 先読み時間(ノート予約) になると演奏予約or演奏開始
+                // Performance start time-Performance reservation or performance start when the look-ahead time (note reservation) is reached
                 if (curTime < note.startTime - states.updateBufTime/1000) break;
 
-                // PicoAudio音源の再生処理 //
+                // Playback processing of PicoAudio sound source //
                 if (!settings.isWebMIDI) { 
-                    // 予約ノート数が急激に増えそうな時、先読み量を小さくしておく //
+                    // Keep the look-ahead amount small when the number of reserved notes is likely to increase rapidly. //
                     if (states.stopFuncs.length >= 350 && states.updateBufTime < 1000) {
                         states.updateBufTime = 12;
                         states.updateBufMaxTime = states.updateBufTime;
                     }
 
-                    // レトロモード（和音制限モード） //
+                    // Retro mode (chord restriction mode) //
                     if (settings.maxPoly != -1 || settings.maxPercPoly != -1) {
                         let polyCnt = 0;
                         let percCnt = 0;
@@ -153,7 +153,7 @@ export default class UpdateNote {
                         }
                     }
 
-                    // １ノート分の再生処理（WebAudioで再生） //
+                    // Playback processing for one note (playback with WebAudio) //
                     const stopFunc =
                         note.channel != 9 ? picoAudio.createNote(note)
                         : picoAudio.createPercussionNote(note);
@@ -165,31 +165,31 @@ export default class UpdateNote {
                 }
                 states.noteOnAry.push(note);
             }
-            // notesのどこまで再生したかを記憶して、次回コールバック時にそこから処理を始める
+            // Remember how far you played notes and start processing from there the next callback
             states.playIndices[ch] = idx;
         }
 
-        // noteOnの時間になったか監視 //
+        // Monitor if it's time for noteOn //
         this.checkNoteOn(picoAudio);
 
-        // noteOffの時間になったか監視 //
+        // Monitor if it's time for noteOff //
         this.checkNoteOff(picoAudio);
 
-        // WebMIDIの再生処理 //
+        // WebMIDI playback process //
         if (settings.isWebMIDI && settings.WebMIDIPortOutput != null) {
             const messages = picoAudio.playData.messages;
             const smfData = picoAudio.playData.smfData;
-            let idx = states.playIndices[16]; // 17chはWebMIDI用
+            let idx = states.playIndices[16]; // 17ch is for Web MIDI
             for (; idx<messages.length; idx++) {
                 const message = messages[idx];
                 const curTime = context.currentTime - states.startTime;
 
-                // 終わったノートは演奏せずにスキップ
+                // Skip the finished notes without playing
                 if (curTime > message.time + 1) continue;
-                // 演奏開始時間 - 先読み時間(ノート予約) になると演奏予約or演奏開始
+                // Performance start time-Performance reservation or performance start when the look-ahead time (note reservation) is reached
                 if (curTime < message.time - 1) break;
 
-                // WebMIDIでMIDIメッセージを送信する処理 //
+                // The process of sending a MIDI message via WebMIDI //
                 const pLen = message.smfPtrLen;
                 const p = message.smfPtr;
                 const time = message.time;
@@ -197,9 +197,9 @@ export default class UpdateNote {
                 if (state!=0xff) {
                     try {
                         if (state==0xF0 || state==0xF7) {
-                            // sysExのMIDIメッセージ
+                            // sysEx MIDI messages
                             if (settings.WebMIDIPortSysEx) {
-                                // 長さ情報を取り除いて純粋なSysExメッセージにする
+                                // Remove length information into a pure SysEx message
                                 const lengthAry = ParseUtil.variableLengthToInt(smfData, p+1, p+1+4);
                                 const sysExStartP = p+1+lengthAry[1];
                                 const sysExEndP = sysExStartP+lengthAry[0];
@@ -212,7 +212,7 @@ export default class UpdateNote {
                                     (time - context.currentTime + Performance.now()/1000 + states.startTime) * 1000);
                             }
                         } else {
-                            // sysEx以外のMIDIメッセージ
+                            // MIDI messages other than sysEx
                             const sendMes = [];
                             for (let i=0; i<pLen; i++) sendMes.push(smfData[p+i]);
                             settings.WebMIDIPortOutput.send(sendMes,
@@ -223,14 +223,14 @@ export default class UpdateNote {
                     }
                 }
             }
-            // messagesのどこまで送信したかを記憶して、次回コールバック時にそこから処理を始める
+            // Remember how far you sent messages and start processing from there the next callback
             states.playIndices[16] = idx;
         }
 
-        // 1msコールバックが呼ばれた回数をカウント
+        // Count the number of times a 1ms callback is called
         cnt ++;
 
-        // 変数を反映 //
+        // Reflect variables //
         this.updatePreTime = updateNowTime;
         this.pPreTime = pPreTime;
         this.cPreTime = cPreTime;
@@ -240,8 +240,8 @@ export default class UpdateNote {
     }
 
     /**
-     * noteOnの時間になったか監視
-     * @param {PicoAudio} picoAudio PicoAudioインスタンス
+     * Monitor if it's time for noteOn
+     * @param {PicoAudio} picoAudio PicoAudio instance
      */
     static checkNoteOn(picoAudio) {
         const context = picoAudio.context;
@@ -254,10 +254,10 @@ export default class UpdateNote {
             const tempNote = noteOnAry[i];
             const nowTime = context.currentTime - states.startTime;
             if (tempNote.startTime - nowTime <= 0) {
-                ArrayUtil.delete(noteOnAry, i); // noteOnAry.splice(i, 1); の高速化
+                ArrayUtil.delete(noteOnAry, i); // noteOnAry.splice(i, 1); Speed ​​up
                 noteOffAry.push(tempNote);
 
-                // イベント発火
+                // Event firing
                 if (trigger.isNoteTrigger) trigger.noteOn(tempNote);
                 picoAudio.fireEvent('noteOn', tempNote);
 
@@ -267,8 +267,8 @@ export default class UpdateNote {
     }
 
     /**
-     * noteOffの時間になったか監視
-     * @param {PicoAudio} picoAudio PicoAudioインスタンス
+     * Monitor if it's time for noteOff
+     * @param {PicoAudio} picoAudio PicoAudio instance
      */
     static checkNoteOff(picoAudio) {
         const context = picoAudio.context;
@@ -281,7 +281,7 @@ export default class UpdateNote {
             const nowTime = context.currentTime - states.startTime;
             if ((tempNote.channel != 9 && tempNote.stopTime - nowTime <= 0)
                 || (tempNote.channel == 9 && tempNote.drumStopTime - nowTime <= 0)) {
-                ArrayUtil.delete(noteOffAry, i); // noteOffAry.splice(i, 1); の高速化
+                ArrayUtil.delete(noteOffAry, i); // noteOffAry.splice(i, 1); Speed ​​up
                 picoAudio.clearFunc("note", tempNote);
 
                 // イベント発火

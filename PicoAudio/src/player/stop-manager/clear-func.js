@@ -11,7 +11,7 @@ export default function clearFunc(tar1, tar2) {
 
     this.states.stopFuncs.some((n, i, ary) => {
         if (n[tar1] == tar2) {
-            ArrayUtil.delete(ary, i); // ary.splice(i, 1); を高速化
+            ArrayUtil.delete(ary, i); // ary.splice(i, 1); Speed ​​up
             return true;
         }
     });

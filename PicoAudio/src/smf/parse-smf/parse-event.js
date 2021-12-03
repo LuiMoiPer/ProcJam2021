@@ -2,22 +2,22 @@ import ArrayUtil from '../../util/array-util.js';
 import {Number_MAX_SAFE_INTEGER} from '../../util/ponyfill.js';
 
 export default function parseEvent(info) {
-    // 関数呼び出し元からデータをもらう //
+    // Get data from the function caller //
     const smf = info.smf;
     const header = info.header;
     const channels = info.channels;
     const tempoTrack = info.tempoTrack;
     let songLength = info.songLength;
 
-    // SMFのMIDIイベント解析 //
+    // SMF MIDI event analysis //
     let tempo;
     let tempoCurTick;
     let tempoCurTime;
     let cc111Tick = -1;
     let cc111Time = -1;
-    let firstNoteOnTiming = Number_MAX_SAFE_INTEGER; // 最初のノートオンのTick
+    let firstNoteOnTiming = Number_MAX_SAFE_INTEGER; // First note-on Tick
     let firstNoteOnTime = Number_MAX_SAFE_INTEGER;
-    let lastNoteOffTiming = 0; // 最後のノートオフのTick
+    let lastNoteOffTiming = 0; // Last note-off Tick
     let lastNoteOffTime = 0;
 
     // Midi Events (0x8n - 0xEn) parse
@@ -56,8 +56,8 @@ export default function parseEvent(info) {
             switch (mes0) {
                 case 0x8: // Note OFF - 8[ch], Pitch, Velocity
                 case 0x9: // Note ON - 9[ch], Pitch, Velocity
-                    if (mes0 == 0x9 && smf[p+2] != 0) { // ノートオン
-                        // ノート情報が入ったオブジェクトを作成 //
+                    if (mes0 == 0x9 && smf[p+2] != 0) { // Note on
+                        // Create an object with note information //
                         const note = {
                             start: tick,
                             stop: null,
@@ -75,43 +75,43 @@ export default function parseEvent(info) {
                             instrument: instrument,
                             channel: ch,
                             nextSameNoteOnInterval: -1,
-                            drumStopTime: 2 // 再生時に使う
+                            drumStopTime: 2 // Used during playback
                         };
 
-                        // 前回鳴っていた同音ノートに次のノートオン時間を入れる //
-                        // 同音ノートを二重再生したくない場合のために記録する //
+                        // Put the next note-on time in the same note that was ringing last time //
+                        // Record in case you don't want to double-play homophones //
                         const prevNote = nextNoteOnAry[smf[p+1]];
                         if (prevNote) {
                             prevNote.nextSameNoteOnInterval = time - prevNote.startTime;
                         }
                         nextNoteOnAry[smf[p+1]] = note;
 
-                        // 同音ノートがノートオン中の場合、ノートオフにする //
+                        // If the homophone note is on, turn it off. //
                         nowNoteOnIdxAry.some((idx,i) => {
                             const note = channel.notes[idx];
                             if (note.pitch == smf[p+1] && note.stop==null) {
                                 note.stop = tick;
                                 note.stopTime = time;
-                                ArrayUtil.delete(nowNoteOnIdxAry, i); // nowNoteOnIdxAry.splice(i, 1); を軽量化
+                                ArrayUtil.delete(nowNoteOnIdxAry, i); // nowNoteOnIdxAry.splice(i, 1); Lightweight
                             }
                         });
 
-                        // ノートオン中配列に入れる
+                        // Put in a note-on array
                         nowNoteOnIdxAry.push(channel.notes.length);
-                        // notes一覧にnoteオブジェクトを入れる
+                        // Put a note object in the notes list
                         channel.notes.push(note);
 
-                        // 最初のノートオン時間を記録 //
+                        // Record first note-on time //
                         if (tick < firstNoteOnTiming) {
                             firstNoteOnTiming = tick;
                             firstNoteOnTime = time;
                         }
-                    } else { // ノートオフ
-                        // ノートオン中配列から該当ノートを探し、ノートオフ処理をする //
+                    } else { // Note off
+                        // Find the corresponding note in the note-on array and perform note-off processing. //
                         nowNoteOnIdxAry.some((idx, i) => {
                             const note = channel.notes[idx];
                             if (note.pitch == smf[p+1] && note.stop == null) {
-                                if (hold >= this.settings.holdOnValue) { // ホールドが効いている場合
+                                if (hold >= this.settings.holdOnValue) { // If the hold is working
                                     if (note.holdBeforeStop == null) {
                                         note.holdBeforeStop = [{
                                             timing: tick,
@@ -119,13 +119,13 @@ export default function parseEvent(info) {
                                             value: hold
                                         }];
                                     }
-                                } else { // ホールドしていない場合
+                                } else { // If not held
                                     note.stop = tick;
                                     note.stopTime = time;
-                                    ArrayUtil.delete(nowNoteOnIdxAry, i); // nowNoteOnIdxAry.splice(i, 1); を軽量化
+                                    ArrayUtil.delete(nowNoteOnIdxAry, i); // nowNoteOnIdxAry.splice(i, 1); Lightweight
                                 }
 
-                                // 最後のノートオフ時間を記録 //
+                                // Record last note-off time //
                                 if (tick > lastNoteOffTiming) {
                                     lastNoteOffTiming = tick;
                                     lastNoteOffTime = time;
@@ -155,20 +155,20 @@ export default function parseEvent(info) {
                             break;
                         case 6:
                             if (rpnLsb==0 && rpnMsb==0) {
-                                // RLSB=0 & RMSB=0 -> 6はピッチ
+                                // RLSB=0 & RMSB=0 -> 6 is the pitch
                                 dataEntry = smf[p+2];
                                 if (dataEntry > 24) {
                                     dataEntry = 24;
                                 }
                             }
                             if (nrpnLsb==8 && nrpnMsb==1) {
-                                // (保留)ビブラート・レイト(GM2/GS/XG)
+                                // (Hold) Vibrato Late (GM2 / GS / XG)
                                 //console.log("CC  8 1 6 "+smf[p+2]+" tick:"+tick);
                             } else if (nrpnLsb==9 && nrpnMsb==1) {
-                                // (保留)ビブラート・デプス(GM2/GS/XG)
+                                // (Hold) Vibrato Depth (GM2 / GS / XG)
                                 //console.log("CC  9 1 6 "+smf[p+2]+" tick:"+tick);
                             } else if (nrpnLsb==10 && nrpnMsb==1) {
-                                // (保留)ビブラート・ディレイ(GM2/GS/XG)
+                                // (Hold) Vibrato Delay (GM2 / GS / XG)
                                 //console.log("CC 10 1 6 "+smf[p+2]+" tick:"+tick);
                             }
                             break;
@@ -206,7 +206,7 @@ export default function parseEvent(info) {
                                     if (note.stop == null && note.holdBeforeStop != null) {
                                         note.stop = tick;
                                         note.stopTime = time;
-                                        ArrayUtil.delete(nowNoteOnIdxAry, i); // nowNoteOnIdxAry.splice(i, 1); を軽量化
+                                        ArrayUtil.delete(nowNoteOnIdxAry, i); // nowNoteOnIdxAry.splice(i, 1); Lightweight
                                     }
                                 }
                             }
@@ -245,7 +245,7 @@ export default function parseEvent(info) {
                         case 101:
                             rpnMsb = smf[p+2];
                             break;
-                        case 111: // RPGツクール用ループ(CC111)
+                        case 111: // RPG Maker Loop (CC111)
                             if (cc111Tick == -1) {
                                 cc111Tick = tick;
                                 cc111Time = time;
@@ -273,7 +273,7 @@ export default function parseEvent(info) {
                     });
                     break;
                 case 0xF:
-                    //lastState = smf[p]; <- ランニングステートは無い
+                    //lastState = smf[p]; <- There is no running state
                     switch (smf[p]) {
                         case 0xF0:
                         case 0xF7:
@@ -317,7 +317,7 @@ export default function parseEvent(info) {
         }
     }
 
-    // ホールドが効いてノートオンのままになったノートをノートオフする //
+    // Note off a note that has been held and remains note-on. //
     for (let ch=0; ch<16; ch++) {
         const channel = channels[ch];
         const nowNoteOnIdxAry = channel.nowNoteOnIdxAry;
@@ -333,11 +333,11 @@ export default function parseEvent(info) {
                     for (let i2=ccAry.length-1; i2>=1; i2--) {
                         const obj = ccAry[i2];
                         if (obj.timing>lastNoteOffTiming) {
-                            ArrayUtil.delete(ccAry, i2); // ccAry.splice(i2, 1); を軽量化
+                            ArrayUtil.delete(ccAry, i2); // ccAry.splice(i2, 1); Lightweight
                         }
                     }
                 });
-                ArrayUtil.delete(nowNoteOnIdxAry, i); // nowNoteOnIdxAry.splice(i, 1); を軽量化
+                ArrayUtil.delete(nowNoteOnIdxAry, i); // nowNoteOnIdxAry.splice(i, 1); Lightweight
             }
         }
         delete channel.nowNoteOnIdxAry;
@@ -345,7 +345,7 @@ export default function parseEvent(info) {
     if (this.settings.isSkipEnding) songLength = lastNoteOffTiming;
     tempoTrack.push({ timing:songLength, time:(60 / tempo / header.resolution) * (songLength - tempoCurTick) + tempoCurTime, value:120 });
 
-    // WebMIDI用のMIDIメッセージを作成 //
+    // Compose MIDI messages for WebMIDI //
     const messages = [];
     if (this.settings.isWebMIDI) {
         const channel = channels[16];
@@ -378,7 +378,7 @@ export default function parseEvent(info) {
         }
     }
 
-    // 関数呼び出し元にデータを返す //
+    // Returns data to the function caller //
     info.songLength = songLength;
     info.cc111Tick = cc111Tick;
     info.cc111Time = cc111Time;
@@ -388,7 +388,7 @@ export default function parseEvent(info) {
     info.lastNoteOffTime = lastNoteOffTime;
     if (this.settings.isWebMIDI) {
         info.messages = messages;
-        info.smfData = new Uint8Array(smf); // lastStateを上書きしたsmfをコピー
+        info.smfData = new Uint8Array(smf); // Copy smf that overwrites lastState
     }
 
     return info;

@@ -1,5 +1,5 @@
 export default function createNote(option) {
-    const note = this.createBaseNote(option, false, true, false, true); // oscillatorのstopはこちらで実行するよう指定
+    const note = this.createBaseNote(option, false, true, false, true); // Specify to execute stop of oscillator here
     if (note.isGainValueZero) return null;
 
     const oscillator = note.oscillator;
@@ -10,7 +10,7 @@ export default function createNote(option) {
 
     let note2;
 
-    // 音色の設定 //
+    // Tone settings //
     switch (this.channels[note.channel][0]*1000 || option.instrument) {
         // Sine
         case 1000:
@@ -55,15 +55,15 @@ export default function createNote(option) {
         }
     }
 
-    // 音の終わりのプチプチノイズが気になるので、音の終わりに5ms減衰してノイズ軽減 //
+    // I'm worried about the petit noise at the end of the sound, so it is attenuated by 5ms at the end of the sound to reduce the noise. //
     if ((oscillator.type == "sine" || oscillator.type == "triangle")
         && !isPizzicato && note.stop - note.start > 0.01) {
         isNoiseCut = true;
     }
 
-    // 減衰の設定 //
+    // Attenuation setting //
     switch (this.channels[note.channel][1]/10 || option.instrument) {
-        // ピッチカート系減衰
+        // Pizzicato damping
         case 0.2:
         case 12: case 13: case 45: case 55:
         {
@@ -74,7 +74,7 @@ export default function createNote(option) {
             this.stopAudioNode(oscillator, note.start+0.2, stopGainNode);
             break;
         }
-        // ピアノ程度に伸ばす系
+        // A system that stretches to the extent of a piano
         case 0.3:
         case  0: case  1: case  2: case  3: case  6: case  9: case 11: case 14: case 15:
         case 32: case 36: case 37: case 46: case 47:
@@ -88,7 +88,7 @@ export default function createNote(option) {
             this.stopAudioNode(oscillator, note.stop, stopGainNode, isNoiseCut);
             break;
         }
-        // ギター系
+        // Guitar system
         case 0.4:
         case 24: case 25: case 26: case 27: case 28: case 29: case 30: case 31: case 34:
         {
@@ -98,7 +98,7 @@ export default function createNote(option) {
             this.stopAudioNode(oscillator, note.stop, stopGainNode, isNoiseCut);
             break;
         }
-        // 減衰していくけど終わらない系
+        // A system that decays but never ends
         case 0.5:
         case 4: case 5: case 7: case 8: case 10: case 33: case 35:
         {
@@ -129,7 +129,7 @@ export default function createNote(option) {
         }
     }
 
-    // 音をストップさせる関数を返す //
+    // Returns a function that stops the sound //
     return () => {
         this.stopAudioNode(oscillator, 0, stopGainNode, true);
         if (note2 && note2.oscillator) this.stopAudioNode(note2.oscillator, 0, note2.stopGainNode, true);

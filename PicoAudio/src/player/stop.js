@@ -1,13 +1,13 @@
 export default function stop(isSongLooping) {
     const states = this.states;
 
-    // 再生していない場合、何もしない //
+    // If not playing, do nothing //
     if (states.isPlaying == false) return;
 
-    // ステータスを停止状態にする・終了処理を呼ぶ //
+    // Put the status in the stopped state. Call the end process //
     states.isPlaying = false;
     states.stopTime = this.context.currentTime;
-    states.stopFuncs.forEach((n) => { // 再生中の音の停止関数を呼ぶ
+    states.stopFuncs.forEach((n) => { // Call the stop function of the sound being played
         n.stopFunc();
     });
     states.stopFuncs = [];
@@ -17,7 +17,7 @@ export default function stop(isSongLooping) {
     states.noteOnAry = [];
     states.noteOffAry = [];
 
-    // WebMIDIで再生中の場合、停止メッセージを送信 //
+    // Send stop message when playing on WebMIDI //
     if (this.settings.isWebMIDI) {
         if (isSongLooping)
             return;
@@ -31,7 +31,7 @@ export default function stop(isSongLooping) {
         }, 1000);
     }
 
-    // 停止をコールバックに通知 //
+    // Notify callback of outage //
     this.trigger.stop();
     this.fireEvent('pause');
     this.fireEvent('stop');
