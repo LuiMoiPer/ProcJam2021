@@ -284,7 +284,7 @@ export default class UpdateNote {
                 ArrayUtil.delete(noteOffAry, i); // noteOffAry.splice(i, 1); Speed ​​up
                 picoAudio.clearFunc("note", tempNote);
 
-                // イベント発火
+                // Event firing
                 if (trigger.isNoteTrigger) trigger.noteOff(tempNote);
                 picoAudio.fireEvent('noteOff', tempNote);
 
