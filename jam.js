@@ -49,27 +49,41 @@ function makeChannelInfo(){
     }
     
     for (let i = 0; i < parsedData.channels.length; i++) {
+        if (parsedData.channels[i].notes.length == 0) {
+            continue;
+        }
         const channel = document.createElement("p");
         channel.id = `channel${i}`;
         channel.innerText = `Notes in channel ${i}: ${parsedData.channels[i].notes.length}`;
+        addChannelOnOffButtons(channel, i);
         channelInfo.appendChild(channel);
     }
 };
 
-const turnChannelOffButton = document.createElement("button");
-turnChannelOffButton.innerText = "Turn channel 1 off";
-turnChannelOffButton.addEventListener("click", () => {
-    picoAudio.playData.channels[1].notes.forEach(note => {
-        note.velocity = 0;
+function addChannelOnOffButtons(element, channelNum) {
+    const channelState = document.createElement("div");
+    const turnChannelOffButton = document.createElement("button");
+    turnChannelOffButton.innerText = "Channel off";
+    turnChannelOffButton.addEventListener("click", () => {
+        channelState.innerText = "Channel is off";
+        picoAudio.playData.channels[channelNum].notes.forEach(note => {
+            note.oldVelocity = note.velocity;
+            note.velocity = 0;
+        });
     });
-});
-document.body.appendChild(turnChannelOffButton);
 
-const turnChannelOnButton = document.createElement("button");
-turnChannelOnButton.innerText = "Turn channel 1 on";
-turnChannelOnButton.addEventListener("click", () => {
-    picoAudio.playData.channels[1].notes.forEach(note => {
-        note.velocity = 0.5;
+    const turnChannelOnButton = document.createElement("button");
+    turnChannelOnButton.innerText = "Channel on";
+    turnChannelOnButton.addEventListener("click", () => {
+        channelState.innerText = "Channel is on"
+        picoAudio.playData.channels[channelNum].notes.forEach(note => {
+            if (note.oldVelocity) {
+                note.velocity = note.oldVelocity;
+            }
+        });
     });
-});
-document.body.appendChild(turnChannelOnButton);
+
+    element.append(channelState);
+    element.append(turnChannelOffButton);
+    element.append(turnChannelOnButton);
+};
