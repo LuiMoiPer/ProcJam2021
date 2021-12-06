@@ -20,6 +20,7 @@ const startButton = document.createElement("button");
 startButton.innerText = "Start";
 startButton.addEventListener("click", () => {
     picoAudio.init();
+    picoAudio.setLoop(true);
     picoAudio.play();
 });
 document.body.appendChild(startButton);
@@ -54,3 +55,21 @@ function makeChannelInfo(){
         channelInfo.appendChild(channel);
     }
 };
+
+const turnChannelOffButton = document.createElement("button");
+turnChannelOffButton.innerText = "Turn channel 1 off";
+turnChannelOffButton.addEventListener("click", () => {
+    picoAudio.playData.channels[1].notes.forEach(note => {
+        note.velocity = 0;
+    });
+});
+document.body.appendChild(turnChannelOffButton);
+
+const turnChannelOnButton = document.createElement("button");
+turnChannelOnButton.innerText = "Turn channel 1 on";
+turnChannelOnButton.addEventListener("click", () => {
+    picoAudio.playData.channels[1].notes.forEach(note => {
+        note.velocity = 0.5;
+    });
+});
+document.body.appendChild(turnChannelOnButton);
