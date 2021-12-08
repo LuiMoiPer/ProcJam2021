@@ -62,28 +62,30 @@ function makeChannelInfo(){
 
 function addChannelOnOffButtons(element, channelNum) {
     const channelState = document.createElement("div");
-    const turnChannelOffButton = document.createElement("button");
-    turnChannelOffButton.innerText = "Channel off";
-    turnChannelOffButton.addEventListener("click", () => {
-        channelState.innerText = "Channel is off";
-        picoAudio.playData.channels[channelNum].notes.forEach(note => {
-            note.oldVelocity = note.velocity;
-            note.velocity = 0;
-        });
-    });
+    channelState.innerText = "Channel is: On";
 
-    const turnChannelOnButton = document.createElement("button");
-    turnChannelOnButton.innerText = "Channel on";
-    turnChannelOnButton.addEventListener("click", () => {
-        channelState.innerText = "Channel is on"
-        picoAudio.playData.channels[channelNum].notes.forEach(note => {
-            if (note.oldVelocity) {
-                note.velocity = note.oldVelocity;
-            }
-        });
+    const channelCheckbox = document.createElement("input");
+    channelCheckbox.type = "checkbox";
+    channelCheckbox.id = `channel${channelNum}Checkbox`;
+    channelCheckbox.checked = true;
+    channelCheckbox.addEventListener("click", () => {
+        if (channelCheckbox.checked){
+            channelState.innerText = "Channel is: On"
+            picoAudio.playData.channels[channelNum].notes.forEach(note => {
+                if (note.oldVelocity) {
+                    note.velocity = note.oldVelocity;
+                }
+            });
+        }
+        else{
+            channelState.innerText = "Channel is: Off";
+            picoAudio.playData.channels[channelNum].notes.forEach(note => {
+                note.oldVelocity = note.velocity;
+                note.velocity = 0;
+            });
+        }
     });
 
     element.append(channelState);
-    element.append(turnChannelOffButton);
-    element.append(turnChannelOnButton);
+    element.append(channelCheckbox);
 };
