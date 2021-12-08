@@ -2,19 +2,50 @@ import PicoAudio from './PicoAudio/src/main.js';
 
 const picoAudio = new PicoAudio();
 
-const fileInputElem = document.getElementById('midi-file');
+const song1button = document.createElement("button");
+song1button.innerText = "88 Keys";
+song1button.addEventListener("click", () => {
+    const response = fetch("./Midi/88Keys_Chase.mid")
+        .then(response => {
+            response.arrayBuffer().then(arrayBuffer => loadFileIntoPicoAudio(arrayBuffer));
+        });
+});
+document.body.appendChild(song1button);
+
+const song2button = document.createElement("button");
+song2button.innerText = "Santeria";
+song2button.addEventListener("click", () => {
+    const response = fetch("./Midi/Santeria.mid")
+        .then(response => {
+            response.arrayBuffer().then(arrayBuffer => loadFileIntoPicoAudio(arrayBuffer));
+        });
+});
+document.body.appendChild(song2button);
+
+const song3button = document.createElement("button");
+song3button.innerText = "One Winged Angel";
+song3button.addEventListener("click", () => {
+    const response = fetch("./Midi/OneWingedAngel.mid")
+        .then(response => {
+            response.arrayBuffer().then(arrayBuffer => loadFileIntoPicoAudio(arrayBuffer));
+        });
+});
+document.body.appendChild(song3button);
+
 let parsedData = null;
+const fileInputElem = document.createElement("input");
+fileInputElem.type = "file";
+fileInputElem.id = "midi-file";
+fileInputElem.accept = "audio/midi";
 fileInputElem.addEventListener('change', () => {
     const file = fileInputElem.files[0];
     const fileReader = new FileReader();
     fileReader.onload = () => {
-        const standardMidiFile = new Uint8Array(fileReader.result);
-        parsedData = picoAudio.parseSMF(standardMidiFile);
-        picoAudio.setData(parsedData);
-        makeChannelInfo();
+        loadFileIntoPicoAudio(fileReader.result);
     };
     fileReader.readAsArrayBuffer(file);
 });
+document.body.appendChild(fileInputElem);
 
 const startButton = document.createElement("button");
 startButton.innerText = "Start";
@@ -89,3 +120,10 @@ function addChannelOnOffButtons(element, channelNum) {
     element.append(channelState);
     element.append(channelCheckbox);
 };
+
+function loadFileIntoPicoAudio(file) {
+    const standardMidiFile = new Uint8Array(file);
+    parsedData = picoAudio.parseSMF(standardMidiFile);
+    picoAudio.setData(parsedData);
+    makeChannelInfo();
+}
