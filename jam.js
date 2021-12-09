@@ -86,7 +86,9 @@ function addChannelOnOffButtons(element, channelNum){
         else{
             channelState.innerText = "Channel is: Off";
             picoAudio.playData.channels[channelNum].notes.forEach(note => {
-                note.oldVelocity = note.velocity;
+                if (!note.oldVelocity) {
+                    note.oldVelocity = note.velocity;
+                }
                 note.velocity = 0;
             });
         }
@@ -121,7 +123,9 @@ function addTrebleAndBassOnOffButtons(){
         else{
             if (analyzedNotes && analyzedNotes.trebleNotes) {
                 analyzedNotes.trebleNotes.forEach(value => {
-                    picoAudio.playData.channels[value.channel].notes[value.note].oldVelocity = picoAudio.playData.channels[value.channel].notes[value.note].velocity;
+                    if (!picoAudio.playData.channels[value.channel].notes[value.note].oldVelocity) {
+                        picoAudio.playData.channels[value.channel].notes[value.note].oldVelocity = picoAudio.playData.channels[value.channel].notes[value.note].velocity;
+                    }
                     picoAudio.playData.channels[value.channel].notes[value.note].velocity = 0;
                 });
             }
@@ -147,7 +151,9 @@ function addTrebleAndBassOnOffButtons(){
         else{
             if (analyzedNotes && analyzedNotes.bassNotes) {
                 analyzedNotes.bassNotes.forEach(value => {
-                    picoAudio.playData.channels[value.channel].notes[value.note].oldVelocity = picoAudio.playData.channels[value.channel].notes[value.note].velocity;
+                    if (!picoAudio.playData.channels[value.channel].notes[value.note].oldVelocity) {
+                        picoAudio.playData.channels[value.channel].notes[value.note].oldVelocity = picoAudio.playData.channels[value.channel].notes[value.note].velocity;
+                    }
                     picoAudio.playData.channels[value.channel].notes[value.note].velocity = 0;
                 });
             }
