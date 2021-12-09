@@ -7,6 +7,7 @@ makeSongButton("SanteriaButton", "Santeria", "./Midi/Santeria.mid");
 makeSongButton("OneWingedAngelButton", "One Winged Angel", "./Midi/OneWingedAngel.mid");
 
 let parsedData = null;
+let analyzedNotes = null;
 const fileInputElem = document.createElement("input");
 fileInputElem.type = "file";
 fileInputElem.id = "midi-file";
@@ -65,7 +66,7 @@ function makeChannelInfo(){
     }
 };
 
-function addChannelOnOffButtons(element, channelNum) {
+function addChannelOnOffButtons(element, channelNum){
     const channelState = document.createElement("div");
     channelState.innerText = "Channel is: On";
 
@@ -95,10 +96,80 @@ function addChannelOnOffButtons(element, channelNum) {
     element.append(channelCheckbox);
 };
 
+function addTrebleAndBassOnOffButtons(){
+    let trebleBassControls = document.getElementById("TrebleBassControls");
+    if (trebleBassControls != null) {
+        trebleBassControls.parentNode.removeChild(trebleBassControls);
+    }
+
+    trebleBassControls = document.createElement("div");
+    trebleBassControls.id = "TrebleBassControls";
+    document.body.appendChild(trebleBassControls);
+
+    const trebleCheckbox = document.createElement("input");
+    trebleCheckbox.type = "checkbox";
+    trebleCheckbox.id = `trebleCheckbox`;
+    trebleCheckbox.checked = true;
+    trebleCheckbox.addEventListener("click", () => {
+        if (trebleCheckbox.checked){
+            if (analyzedNotes && analyzedNotes.trebleNotes) {
+                analyzedNotes.trebleNotes.forEach(value => {
+                    picoAudio.playData.channels[value.channel].notes[value.note].velocity = picoAudio.playData.channels[value.channel].notes[value.note].oldVelocity;
+                });
+            }
+        }
+        else{
+            if (analyzedNotes && analyzedNotes.trebleNotes) {
+                analyzedNotes.trebleNotes.forEach(value => {
+                    picoAudio.playData.channels[value.channel].notes[value.note].oldVelocity = picoAudio.playData.channels[value.channel].notes[value.note].velocity;
+                    picoAudio.playData.channels[value.channel].notes[value.note].velocity = 0;
+                });
+            }
+        }
+    });
+
+    const trebleCheckboxLabel = document.createElement("label");
+    trebleCheckboxLabel.innerText = "Play treble notes";
+    trebleCheckboxLabel.for = trebleCheckbox.id;
+
+    const bassCheckbox = document.createElement("input");
+    bassCheckbox.type = "checkbox";
+    bassCheckbox.id = `bassCheckbox`;
+    bassCheckbox.checked = true;
+    bassCheckbox.addEventListener("click", () => {
+        if (bassCheckbox.checked){
+            if (analyzedNotes && analyzedNotes.bassNotes) {
+                analyzedNotes.bassNotes.forEach(value => {
+                    picoAudio.playData.channels[value.channel].notes[value.note].velocity = picoAudio.playData.channels[value.channel].notes[value.note].oldVelocity;
+                });
+            }
+        }
+        else{
+            if (analyzedNotes && analyzedNotes.bassNotes) {
+                analyzedNotes.bassNotes.forEach(value => {
+                    picoAudio.playData.channels[value.channel].notes[value.note].oldVelocity = picoAudio.playData.channels[value.channel].notes[value.note].velocity;
+                    picoAudio.playData.channels[value.channel].notes[value.note].velocity = 0;
+                });
+            }
+        }
+    });
+
+    const bassCheckboxLabel = document.createElement("label");
+    bassCheckboxLabel.innerText = "Play bass notes";
+    bassCheckboxLabel.for = bassCheckbox.id;
+
+    trebleBassControls.append(trebleCheckboxLabel);
+    trebleBassControls.append(trebleCheckbox);
+    trebleBassControls.append(bassCheckboxLabel);
+    trebleBassControls.append(bassCheckbox);
+}
+
 function loadFileIntoPicoAudio(file){
     const standardMidiFile = new Uint8Array(file);
     parsedData = picoAudio.parseSMF(standardMidiFile);
     picoAudio.setData(parsedData);
+    analyzeNotes(parsedData);
+    addTrebleAndBassOnOffButtons();
     makeChannelInfo();
 }
 
@@ -113,4 +184,25 @@ function makeSongButton(id, innerText, songPath){
             });
     });
     document.body.appendChild(songButton);
+}
+
+function analyzeNotes(parsedData){
+    analyzedNotes = {};
+    analyzedNotes.trebleNotes = [];
+    analyzedNotes.bassNotes = [];
+    for (let c = 0; c < parsedData.channels.length; c++) {
+        for (let n = 0; n < parsedData.channels[c].notes.length; n++) {
+            let noteInfo = {
+                channel: c,
+                note: n
+            };
+
+            if (parsedData.channels[c].notes[n].pitch >= 60) {
+                analyzedNotes.trebleNotes.push(noteInfo);
+            }
+            else {
+                analyzedNotes.bassNotes.push(noteInfo);
+            }
+        }
+    }
 }
